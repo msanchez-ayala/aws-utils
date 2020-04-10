@@ -16,6 +16,7 @@ def main():
     config.read_file(open('dwh.cfg'))
 
     iam, redshift = create_aws_clients(
+        ['iam', 'redshift'],
         'us-west-2',
         config['AWS']['KEY'],
         config['AWS']['SECRET']

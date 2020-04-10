@@ -12,15 +12,18 @@ import json
 import configparser
 
 
-def create_aws_clients(region, key, secret):
+def create_aws_clients(clients, region, key, secret):
     """
     Returns
     -------
-    boto3 resource objects (clients) for each of the resources we need for this
-    pipeline: IAM and Redshift.
+    client_objs: a list of boto3 client objects for each of the `clients`
+    strings that were passed through as arguments. They are returned in the same
+    order in which they were given.
 
     Parameters
-    ----------
+    -----------
+    clients: either a string or a list of strings in
+        ['iam', 'ec2', 's3', 'redshift']
     region: a string indicating the geographic region as denoted by AWS.
         You can find this on your AWS console in the upper right.
 
@@ -28,21 +31,20 @@ def create_aws_clients(region, key, secret):
 
     secret: AWS IAM user secret access ID
     """
-    iam = boto3.client(
-        'iam',
-        aws_access_key_id = key,
-        aws_secret_access_key = secret,
-        region_name = 'us-west-2'
-    )
+    if type(clients) == str:
+        clients = [clients]
 
-    redshift = boto3.client(
-        'redshift',
-        region_name = region,
-        aws_access_key_id = key,
-        aws_secret_access_key = secret
-    )
+    client_objs = [
+        boto3.client(
+            client,
+            region_name = region,
+            aws_access_key_id = key,
+            aws_secret_access_key = secret
+        )
+        for client in clients
+    ]
 
-    return iam, redshift
+    return client_objs
 
 def create_iam_role(iam_client, iam_role_name):
     """
@@ -143,6 +145,7 @@ def main():
     config.read_file(open('dwh.cfg'))
 
     iam, redshift = create_aws_clients(
+        ['iam', 'redshift'],
         'us-west-2',
         config['AWS']['KEY'],
         config['AWS']['SECRET']
